@@ -108,7 +108,43 @@
       </div>
     </div>
 
+    <!-- 结果控制条（排序 / 评分筛选 / 列表地图切换） -->
+    <div class="result-ctrl" id="resultCtrl" style="display:none">
+      <div class="ctrl-item">
+        <label>排序</label>
+        <select id="sortSel">
+          <option value="smart">综合推荐</option>
+          <option value="distance">距离最近</option>
+          <option value="rating">评分最高</option>
+          <option value="health">健康分最高</option>
+        </select>
+      </div>
+      <div class="ctrl-item">
+        <label>评分</label>
+        <select id="ratingSel">
+          <option value="0">不限</option>
+          <option value="3.5">3.5+</option>
+          <option value="4">4.0+</option>
+          <option value="4.5">4.5+</option>
+        </select>
+      </div>
+      <div class="ctrl-item view-toggle">
+        <button class="vt-btn active" data-display="list">列表</button>
+        <button class="vt-btn" data-display="map">地图</button>
+      </div>
+    </div>
+
+    <!-- 地图容器（地图视图时显示） -->
+    <div id="mapWrap" style="display:none">
+      <div id="map"></div>
+    </div>
+
     <div id="results"></div>
+
+    <!-- 加载更多 -->
+    <div id="moreBar" style="display:none">
+      <button class="load-more" id="loadMoreBtn">加载更多附近店铺</button>
+    </div>
 
     <div class="hint">
       店铺、距离来自高德地图真实数据；健康度由店铺类型/名称智能判断，价格为参考区间。<br>
@@ -129,6 +165,7 @@
   <script src="./js/engine/amap-service.js"></script>
   <!-- UI 层 -->
   <script src="./js/ui/render.js"></script>
+  <script src="./js/ui/map.js"></script>
   <script src="./js/ui/app.js"></script>
 </body>
 </html>

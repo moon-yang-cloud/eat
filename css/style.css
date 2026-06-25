@@ -101,6 +101,35 @@ button.primary:disabled { background: #b9c9c0; cursor: not-allowed; }
 .radius-row { margin-top: 12px; font-size: 13px; color: var(--muted); }
 .radius-row select { font-size: 13px; padding: 6px 8px; border-radius: 8px; border: 1.5px solid #d7e3dc; background: #fff; }
 
+/* 结果控制条 */
+.result-ctrl { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; padding: 10px 14px; background: var(--card); border-radius: 12px; box-shadow: var(--shadow); }
+.ctrl-item { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.ctrl-item select { font-size: 13px; padding: 6px 8px; border-radius: 8px; border: 1.5px solid #d7e3dc; background: #fff; }
+.view-toggle { margin-left: auto; gap: 0; border: 1.5px solid #d7e3dc; border-radius: 8px; overflow: hidden; }
+.vt-btn { border: none; background: #fff; color: var(--text); padding: 7px 14px; font-size: 13px; cursor: pointer; }
+.vt-btn.active { background: var(--green); color: #fff; }
+
+/* 地图容器 */
+#mapWrap { margin-bottom: 16px; }
+#map { width: 100%; height: 420px; border-radius: 14px; overflow: hidden; box-shadow: var(--shadow); }
+.me-dot { width: 16px; height: 16px; border-radius: 50%; background: #0a7afe; border: 3px solid #fff; box-shadow: 0 0 0 2px #0a7afe; }
+.map-info { font-size: 13px; line-height: 1.5; max-width: 220px; }
+.map-info .mi-name { font-weight: 700; color: var(--text); }
+.map-info .mi-meta { color: var(--warn); margin: 2px 0; }
+.map-info .mi-addr { color: var(--muted); font-size: 12px; }
+
+/* 加载更多 */
+#moreBar { text-align: center; margin: 4px 0 24px; }
+.load-more { background: #fff; color: var(--green-dark); border: 1.5px solid var(--green); border-radius: 10px; padding: 10px 22px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all .15s; }
+.load-more:hover { background: var(--green); color: #fff; }
+.load-more:disabled { color: var(--muted); border-color: #d7e3dc; cursor: not-allowed; }
+
+/* 评分徽标 / 店铺图 / 营业时间 */
+.rating-badge { display: inline-block; font-size: 11px; font-weight: 700; color: #fff; background: #ff9800; border-radius: 8px; padding: 2px 8px; margin-left: 6px; }
+.biz-open { color: var(--muted); font-size: 11px; margin-left: 6px; }
+.dish-photo { width: 100%; height: 140px; object-fit: cover; border-radius: 10px; margin-bottom: 10px; }
+.link-tel { background: #eaf3ee; color: var(--green-dark); }
+
 /* 列表标题 */
 .section-title { font-size: 16px; font-weight: 700; margin: 8px 4px 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .section-title .count { font-size: 12px; color: var(--muted); font-weight: 400; }

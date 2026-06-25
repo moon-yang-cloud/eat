@@ -120,6 +120,42 @@ const Scorer = {
   goalLabel(g) {
     return (GOALS[g] && GOALS[g].label) || g;
   },
+
+  /** 评分取值（无评分按 -1 排末尾） */
+  ratingOf(poi) {
+    return poi.rating != null ? poi.rating : -1;
+  },
+
+  /** 人均价格：优先用高德真实人均，否则用品类估算区间 */
+  priceText(poi) {
+    if (poi.cost != null && poi.cost > 0) return `¥${Math.round(poi.cost)}`;
+    const r = this.estPrice(poi);
+    return `¥${r[0]}-${r[1]}`;
+  },
+
+  /**
+   * 统一排序
+   * @param {Array} list
+   * @param {string} mode  smart | distance | rating | health
+   * @param {object} ctx   {view, goal, filters}
+   */
+  sortBy(list, mode, ctx) {
+    const arr = list.slice();
+    if (mode === "distance") {
+      arr.sort((a, b) => (a.distance == null ? 1e12 : a.distance) - (b.distance == null ? 1e12 : b.distance));
+    } else if (mode === "rating") {
+      arr.sort((a, b) => this.ratingOf(b) - this.ratingOf(a));
+    } else if (mode === "health") {
+      arr.sort((a, b) => (b._health ? b._health.s : 0) - (a._health ? a._health.s : 0));
+    } else {
+      // smart：健康视图按健康+距离，美食视图按匹配+距离
+      const f = ctx.view === "health"
+        ? (p) => this.rankHealth(p, ctx.goal)
+        : (p) => this.rankFood(p, ctx.filters);
+      arr.sort((a, b) => f(b) - f(a));
+    }
+    return arr;
+  },
 };
 
 if (typeof window !== "undefined") window.Scorer = Scorer;

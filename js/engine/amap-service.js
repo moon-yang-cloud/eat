@@ -101,42 +101,64 @@ const AmapService = {
   },
 
   /**
-   * 周边餐饮检索
-   * @returns {Promise<Array>} 归一化后的 POI 列表
+   * 周边餐饮检索（支持分页与丰富字段）
+   * @param {string} keyword 关键词，可空
+   * @param {number[]} center [lng,lat]
+   * @param {number} radius 半径（米）
+   * @param {number} page 页码（从 1 开始）
+   * @returns {Promise<{pois:Array, total:number, hasMore:boolean}>}
    */
-  searchNearby(keyword, center, radius) {
+  searchNearby(keyword, center, radius, page = 1) {
+    const pageSize = (typeof CONFIG !== "undefined" && CONFIG.PAGE_SIZE) || 25;
     return new Promise((resolve, reject) => {
       AMap.plugin("AMap.PlaceSearch", () => {
         const ps = new AMap.PlaceSearch({
           type: "餐饮服务",
-          pageSize: 50,
-          pageIndex: 1,
-          extensions: "base",
+          pageSize: pageSize,
+          pageIndex: page,
+          extensions: "all", // 取详细信息：评分、人均、电话、图片等
         });
         ps.searchNearBy(keyword || "", center, radius, (status, result) => {
           if (status === "complete" && result.poiList && result.poiList.pois) {
-            const pois = result.poiList.pois.map((p) => ({
-              id: p.id,
-              name: p.name,
-              type: p.type,
-              address: p.address,
-              location:
-                p.location && p.location.lng != null
-                  ? [p.location.lng, p.location.lat]
-                  : null,
-              distance: p.distance != null ? p.distance : p.distanceToCenter || null,
-            }));
-            resolve(pois);
+            const list = result.poiList.pois;
+            const total = result.poiList.count || list.length;
+            const pois = list.map((p) => this._normalize(p));
+            const loaded = (page - 1) * pageSize + list.length;
+            resolve({ pois, total, hasMore: loaded < total && list.length > 0 });
           } else if (status === "no_data") {
-            resolve([]); // 确实附近没有
+            resolve({ pois: [], total: 0, hasMore: false });
           } else {
-            // status === "error"：把高德的真实错误抛出来，便于定位（配额/密钥/域名白名单等）
             const msg = typeof result === "string" ? result : (result && result.info) || "未知错误";
             reject(new Error("高德检索失败：" + msg));
           }
         });
       });
     });
+  },
+
+  /** 把高德 POI 归一化为内部结构，尽量提取真实评分/人均/电话/图片 */
+  _normalize(p) {
+    const ext = p.biz_ext || {};
+    const num = (v) => {
+      const n = parseFloat(v);
+      return isNaN(n) ? null : n;
+    };
+    let photo = null;
+    if (Array.isArray(p.photos) && p.photos.length && p.photos[0].url) photo = p.photos[0].url;
+    return {
+      id: p.id,
+      name: p.name,
+      type: p.type,
+      address: p.address,
+      tel: (p.tel && String(p.tel)) || "",
+      location:
+        p.location && p.location.lng != null ? [p.location.lng, p.location.lat] : null,
+      distance: p.distance != null ? p.distance : p.distanceToCenter || null,
+      rating: num(ext.rating), // 真实评分（可能为 null）
+      cost: num(ext.cost), // 真实人均（可能为 null）
+      openTime: ext.open_time || ext.opentime || "",
+      photo: photo,
+    };
   },
 };
 

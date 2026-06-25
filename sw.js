@@ -4,7 +4,7 @@
  * 第三方资源（高德地图等）完全不拦截，直接联网。
  * 这样既能离线打开，又不会因缓存旧文件导致看到过期版本。
  */
-const CACHE_NAME = "healthy-eat-v2";
+const CACHE_NAME = "healthy-eat-v3";
 const ASSETS = [
   "./",
   "./index.html",
@@ -18,6 +18,7 @@ const ASSETS = [
   "./js/engine/storage.js",
   "./js/engine/amap-service.js",
   "./js/ui/render.js",
+  "./js/ui/map.js",
   "./js/ui/app.js",
 ];
 

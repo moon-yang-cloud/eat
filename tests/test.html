@@ -101,6 +101,34 @@
       Store.clearHistory();
     })();
 
+    // ---- 排序 sortBy ----
+    (function () {
+      const pois = [
+        { id: "a", name: "A店", type: "", distance: 800, rating: 4.2, _health: { s: 10, hit: [], bad: [] } },
+        { id: "b", name: "B店", type: "", distance: 300, rating: 3.0, _health: { s: -5, hit: [], bad: [] } },
+        { id: "c", name: "C店", type: "", distance: 1500, rating: 4.8, _health: { s: 30, hit: [], bad: [] } },
+      ];
+      const ctx = { view: "health", goal: "balance", filters: {} };
+      const byDist = Scorer.sortBy(pois, "distance", ctx);
+      assert("按距离：最近的 B 店排第一", byDist[0].id === "b", byDist.map((p) => p.id).join(","));
+      const byRating = Scorer.sortBy(pois, "rating", ctx);
+      assert("按评分：最高的 C 店排第一", byRating[0].id === "c", byRating.map((p) => p.id).join(","));
+      const byHealth = Scorer.sortBy(pois, "health", ctx);
+      assert("按健康分：最高的 C 店排第一", byHealth[0].id === "c", byHealth.map((p) => p.id).join(","));
+    })();
+
+    // ---- 价格文本 priceText ----
+    (function () {
+      assert("有真实人均时直接显示", Scorer.priceText({ name: "某店", type: "", cost: 58 }) === "¥58");
+      assert("无真实人均时回退估算区间", Scorer.priceText({ name: "老灶火锅", type: "" }) === "¥60-120");
+    })();
+
+    // ---- 评分取值 ----
+    (function () {
+      assert("无评分按 -1 处理", Scorer.ratingOf({ name: "x", type: "" }) === -1);
+      assert("有评分原样返回", Scorer.ratingOf({ name: "x", type: "", rating: 4.5 }) === 4.5);
+    })();
+
     // ---- 渲染 ----
     const passed = results.filter((r) => r.ok).length;
     const total = results.length;

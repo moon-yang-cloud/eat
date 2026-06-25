@@ -16,6 +16,7 @@ const CONFIG = {
 
   DEFAULT_RADIUS: 3000, // 默认搜索半径（米）
   MAX_RESULTS: 25, // 结果最多展示条数
+  PAGE_SIZE: 25, // 每页检索条数（分页加载）
   GEO_TIMEOUT: 10000, // 定位超时（毫秒）
   FAV_KEY: "healthyEat.favorites.v1", // 收藏夹 localStorage 键
   HISTORY_KEY: "healthyEat.history.v1", // 搜索历史 localStorage 键

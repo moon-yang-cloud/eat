@@ -22,7 +22,6 @@ const Render = {
   /** 单张店铺卡片 */
   card(poi, opts) {
     const { mode, goal, filters, faved } = opts;
-    const per = Scorer.estPrice(poi);
     const ppl = mode === "food" ? filters.people : 1;
     const cat = (poi.type || "").split(";").pop() || "餐饮";
 
@@ -47,22 +46,45 @@ const Render = {
         tags.push(`<span class="tag">${this.esc(filters.keyword)}</span>`);
       }
       tagsHtml = `<div class="tags">${tags.join("")}</div>`;
-      reason = `距你 ${Scorer.distText(poi.distance)} · ${this.esc(cat)} · ${spicy ? "口味偏辣" : "口味较清淡"}${ppl > 1 ? ` · ${ppl}人合计约 ¥${per[0] * ppl}-${per[1] * ppl}` : ""}。`;
+      reason = `距你 ${Scorer.distText(poi.distance)} · ${this.esc(cat)} · ${spicy ? "口味偏辣" : "口味较清淡"}。`;
     }
 
-    const priceHtml = ppl > 1
-      ? `¥${per[0] * ppl}-${per[1] * ppl}<small>${ppl}人预估</small>`
-      : `¥${per[0]}-${per[1]}<small>人均预估</small>`;
+    // 评分徽标（真实数据）
+    const ratingHtml = poi.rating != null
+      ? `<span class="rating-badge">★ ${poi.rating}</span>`
+      : "";
+
+    // 价格：优先真实人均，否则估算
+    let priceHtml;
+    if (poi.cost != null && poi.cost > 0) {
+      priceHtml = ppl > 1
+        ? `¥${Math.round(poi.cost * ppl)}<small>${ppl}人(人均¥${Math.round(poi.cost)})</small>`
+        : `¥${Math.round(poi.cost)}<small>人均</small>`;
+    } else {
+      const per = Scorer.estPrice(poi);
+      priceHtml = ppl > 1
+        ? `¥${per[0] * ppl}-${per[1] * ppl}<small>${ppl}人预估</small>`
+        : `¥${per[0]}-${per[1]}<small>人均预估</small>`;
+    }
+
+    // 营业时间 / 电话
+    const openHtml = poi.openTime ? `<span class="biz-open">营业 ${this.esc(poi.openTime)}</span>` : "";
+    const telHtml = poi.tel ? `<a class="link-btn link-tel" href="tel:${this.esc(poi.tel)}">打电话</a>` : "";
+    // 店铺首图（高德可能无图或加载失败，失败则隐藏）
+    const photoHtml = poi.photo
+      ? `<img class="dish-photo" src="${this.esc(poi.photo)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'">`
+      : "";
 
     return `
     <div class="dish" data-id="${this.esc(poi.id)}">
+      ${photoHtml}
       <div class="dish-head">
         <div>
           <div class="dish-name">${this.esc(poi.name)}
             <span class="dist-badge">${Scorer.distText(poi.distance)}</span>
-            ${badgeHtml}
+            ${ratingHtml}${badgeHtml}
           </div>
-          <div class="dish-cat">${this.esc(cat)}</div>
+          <div class="dish-cat">${this.esc(cat)} ${openHtml}</div>
           <div class="dish-meta">${this.esc(poi.address || "")}</div>
         </div>
         <div class="dish-right">
@@ -74,7 +96,8 @@ const Render = {
       ${tagsHtml}
       <div class="links">
         <a class="link-btn link-amap" href="${this.amapUrl(poi)}" target="_blank" rel="noopener">高德看店/导航</a>
-        <button class="link-btn link-mt" data-action="meituan" data-name="${encodeURIComponent(poi.name)}">美团外卖（复制店名）</button>
+        ${telHtml}
+        <button class="link-btn link-mt" data-action="meituan" data-name="${encodeURIComponent(poi.name)}">美团外卖</button>
       </div>
     </div>`;
   },
@@ -104,9 +127,16 @@ const Render = {
 
     return `
       <div class="section-title">${title}
-        <span class="count">从周边 ${opts.total} 家真实店铺中筛选 · 按${opts.mode === "health" ? "健康度+距离" : "匹配度+距离"}排序</span>
+        <span class="count">已加载 ${opts.total} 家真实店铺 · 按${this._sortLabel(opts.sortMode, opts.mode)}排序</span>
       </div>
       ${cards}`;
+  },
+
+  _sortLabel(mode, view) {
+    if (mode === "distance") return "距离最近";
+    if (mode === "rating") return "评分最高";
+    if (mode === "health") return "健康分最高";
+    return view === "health" ? "健康度+距离" : "匹配度+距离";
   },
 
   /** 收藏夹列表 */

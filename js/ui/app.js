@@ -16,6 +16,11 @@
     goal: "balance",
     lastPois: [],
     filters: { keyword: "", spicy: "any", people: 2, meal: "auto" },
+    sortMode: "smart", // smart | distance | rating | health
+    minRating: 0, // 最低评分筛选
+    display: "list", // list | map
+    page: 1, // 当前已加载页
+    hasMore: false, // 是否还有下一页
   };
 
   let els = {};
@@ -32,7 +37,13 @@
       panelHealth: $("panelHealth"),
       panelFood: $("panelFood"),
       radiusSel: $("radiusSel"),
+      resultCtrl: $("resultCtrl"),
+      sortSel: $("sortSel"),
+      ratingSel: $("ratingSel"),
+      mapWrap: $("mapWrap"),
       results: $("results"),
+      moreBar: $("moreBar"),
+      loadMoreBtn: $("loadMoreBtn"),
       historyBar: $("historyBar"),
       toast: $("toast"),
     };
@@ -99,6 +110,27 @@
     // 结果区与历史区的事件委托
     els.results.addEventListener("click", onResultsClick);
     els.historyBar.addEventListener("click", onHistoryClick);
+
+    // 排序 / 评分筛选
+    els.sortSel.addEventListener("change", (e) => { state.sortMode = e.target.value; renderCurrent(); });
+    els.ratingSel.addEventListener("change", (e) => { state.minRating = parseFloat(e.target.value) || 0; renderCurrent(); });
+
+    // 列表/地图视图切换
+    document.querySelectorAll(".vt-btn").forEach((b) => {
+      b.addEventListener("click", () => setDisplay(b.dataset.display));
+    });
+
+    // 加载更多
+    els.loadMoreBtn.addEventListener("click", loadMore);
+  }
+
+  // 列表/地图切换
+  function setDisplay(mode) {
+    state.display = mode;
+    document.querySelectorAll(".vt-btn").forEach((b) =>
+      b.classList.toggle("active", b.dataset.display === mode)
+    );
+    renderCurrent();
   }
 
   // ---------------- 视图切换 ----------------
@@ -170,38 +202,105 @@
 
   async function doSearch() {
     if (!state.userCenter) return;
+    state.page = 1;
     const radius = parseInt(els.radiusSel.value, 10);
     const kw = state.view === "food" ? state.filters.keyword || "" : "";
     els.results.innerHTML = `<div class="loading"><div class="spinner"></div>正在搜索 ${radius / 1000}km 内${kw ? "的「" + kw + "」" : "的餐饮店"}…</div>`;
     try {
       await AmapService.load();
-      const pois = await AmapService.searchNearby(kw, state.userCenter, radius);
-      pois.forEach((p) => { p._health = Scorer.healthScore(p); });
-      state.lastPois = pois;
+      const res = await AmapService.searchNearby(kw, state.userCenter, radius, 1);
+      res.pois.forEach((p) => { p._health = Scorer.healthScore(p); });
+      state.lastPois = res.pois;
+      state.hasMore = res.hasMore;
       renderCurrent();
     } catch (e) {
       els.results.innerHTML = `<div class="empty">搜索失败：${Render.esc(e.message || "未知错误")}</div>`;
     }
   }
 
+  // 加载下一页并追加（按 id 去重）
+  async function loadMore() {
+    if (!state.userCenter || !state.hasMore) return;
+    els.loadMoreBtn.disabled = true;
+    els.loadMoreBtn.textContent = "加载中…";
+    try {
+      const radius = parseInt(els.radiusSel.value, 10);
+      const kw = state.view === "food" ? state.filters.keyword || "" : "";
+      const res = await AmapService.searchNearby(kw, state.userCenter, radius, state.page + 1);
+      state.page += 1;
+      const seen = new Set(state.lastPois.map((p) => p.id));
+      res.pois.forEach((p) => {
+        if (!seen.has(p.id)) {
+          p._health = Scorer.healthScore(p);
+          state.lastPois.push(p);
+        }
+      });
+      state.hasMore = res.hasMore;
+      renderCurrent();
+    } catch (e) {
+      showToast(e.message || "加载失败");
+    } finally {
+      els.loadMoreBtn.disabled = false;
+      els.loadMoreBtn.textContent = "加载更多附近店铺";
+    }
+  }
+
   // ---------------- 渲染 ----------------
+  // 按评分筛选 + 排序后的可见列表
+  function visibleList() {
+    let list = state.lastPois.filter(
+      (p) => state.minRating <= 0 || (p.rating != null && p.rating >= state.minRating)
+    );
+    return Scorer.sortBy(list, state.sortMode, {
+      view: state.view,
+      goal: state.goal,
+      filters: state.filters,
+    });
+  }
+
   function renderCurrent() {
+    // 收藏视图
     if (state.view === "fav") {
+      els.resultCtrl.style.display = "none";
+      els.mapWrap.style.display = "none";
+      els.moreBar.style.display = "none";
+      els.results.style.display = "";
       els.results.innerHTML = Render.favorites(Store.getFavorites());
       return;
     }
-    const list = state.lastPois
-      .map((p) => ({ ...p, _rank: state.view === "health" ? Scorer.rankHealth(p, state.goal) : Scorer.rankFood(p, state.filters) }))
-      .sort((a, b) => b._rank - a._rank)
-      .slice(0, CONFIG.MAX_RESULTS);
 
-    els.results.innerHTML = Render.results(list, {
+    const hasData = state.lastPois.length > 0;
+    els.resultCtrl.style.display = hasData ? "flex" : "none";
+    els.moreBar.style.display = hasData && state.hasMore ? "" : "none";
+
+    const list = visibleList();
+    const opts = {
       mode: state.view,
       goal: state.goal,
       filters: state.filters,
       userCenter: state.userCenter,
       total: state.lastPois.length,
-    });
+      sortMode: state.sortMode,
+    };
+
+    if (state.display === "map" && hasData) {
+      // 地图视图
+      els.results.style.display = "none";
+      els.mapWrap.style.display = "";
+      MapView.ensure("map", state.userCenter);
+      MapView.resize();
+      MapView.render(list, state.userCenter, null);
+      return;
+    }
+
+    // 列表视图
+    els.mapWrap.style.display = "none";
+    els.results.style.display = "";
+    if (hasData && list.length === 0) {
+      els.results.innerHTML = `<div class="empty">当前评分筛选（${state.minRating}+）下没有店铺，试试降低评分要求。</div>`;
+    } else {
+      els.results.innerHTML = Render.results(list, opts);
+    }
   }
 
   function renderHistory() {
