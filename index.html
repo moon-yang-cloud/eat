@@ -1,386 +1,127 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>健康外卖推荐 · 帮你科学点餐</title>
-<style>
-  :root {
-    --green: #2e9e5b;
-    --green-dark: #1f7a44;
-    --bg: #f4f7f5;
-    --card: #ffffff;
-    --text: #2b3a33;
-    --muted: #7a8a82;
-    --warn: #e8743b;
-    --carb: #e8743b;
-    --protein: #2e9e5b;
-    --fat: #d9b441;
-    --shadow: 0 4px 20px rgba(0,0,0,0.06);
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    line-height: 1.5;
-    padding-bottom: 40px;
-  }
-  header {
-    background: linear-gradient(135deg, var(--green), var(--green-dark));
-    color: #fff;
-    padding: 28px 20px 24px;
-    text-align: center;
-  }
-  header h1 { font-size: 22px; margin-bottom: 6px; }
-  header p { font-size: 13px; opacity: 0.9; }
-  .container { max-width: 720px; margin: 0 auto; padding: 16px; }
-
-  .card {
-    background: var(--card);
-    border-radius: 16px;
-    box-shadow: var(--shadow);
-    padding: 18px;
-    margin-bottom: 16px;
-  }
-
-  .loc-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-  button.primary {
-    background: var(--green);
-    color: #fff;
-    border: none;
-    border-radius: 10px;
-    padding: 12px 18px;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background .2s;
-  }
-  button.primary:hover { background: var(--green-dark); }
-  button.primary:disabled { background: #b9c9c0; cursor: not-allowed; }
-  .loc-status { font-size: 13px; color: var(--muted); flex: 1; min-width: 160px; }
-  .loc-status.ok { color: var(--green-dark); font-weight: 600; }
-  .loc-status.err { color: var(--warn); }
-
-  .goals { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
-  .goal-btn {
-    border: 1.5px solid #d7e3dc;
-    background: #fff;
-    color: var(--text);
-    border-radius: 20px;
-    padding: 7px 16px;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all .15s;
-  }
-  .goal-btn.active { background: var(--green); color: #fff; border-color: var(--green); }
-
-  .section-title { font-size: 16px; font-weight: 700; margin: 8px 4px 12px; display: flex; align-items: center; gap: 8px; }
-  .section-title .count { font-size: 12px; color: var(--muted); font-weight: 400; }
-
-  .dish {
-    background: var(--card);
-    border-radius: 14px;
-    box-shadow: var(--shadow);
-    padding: 16px;
-    margin-bottom: 12px;
-  }
-  .dish-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
-  .dish-name { font-size: 16px; font-weight: 700; }
-  .dish-cat { font-size: 11px; color: var(--muted); margin-top: 2px; }
-  .dish-price { font-size: 18px; font-weight: 700; color: var(--warn); white-space: nowrap; }
-  .dish-price small { font-size: 11px; color: var(--muted); font-weight: 400; }
-
-  .score-badge {
-    display: inline-block;
-    font-size: 11px;
-    font-weight: 700;
-    padding: 2px 8px;
-    border-radius: 8px;
-    margin-left: 8px;
-    color: #fff;
-  }
-
-  .macros { display: flex; gap: 6px; margin: 12px 0 10px; }
-  .macro {
-    flex: 1;
-    text-align: center;
-    background: #f6f9f7;
-    border-radius: 8px;
-    padding: 7px 4px;
-  }
-  .macro .v { font-size: 15px; font-weight: 700; }
-  .macro .l { font-size: 10px; color: var(--muted); }
-  .macro.protein .v { color: var(--protein); }
-  .macro.carb .v { color: var(--carb); }
-  .macro.fat .v { color: var(--fat); }
-
-  .bar { height: 7px; border-radius: 4px; display: flex; overflow: hidden; margin-bottom: 10px; }
-  .bar .p { background: var(--protein); }
-  .bar .c { background: var(--carb); }
-  .bar .f { background: var(--fat); }
-
-  .reason { font-size: 13px; color: #4a5a52; background: #f0f7f2; border-radius: 8px; padding: 9px 11px; margin-bottom: 12px; }
-  .reason.warn { background: #fdf0e9; color: #a8501f; }
-
-  .links { display: flex; gap: 10px; }
-  .link-btn {
-    flex: 1;
-    text-align: center;
-    text-decoration: none;
-    border-radius: 10px;
-    padding: 10px;
-    font-size: 14px;
-    font-weight: 600;
-    color: #fff;
-  }
-  .link-mt { background: #ffc300; color: #5a3d00; }
-  .link-elm { background: #0095ff; }
-
-  .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
-  .tag { font-size: 11px; background: #eaf3ee; color: var(--green-dark); padding: 2px 8px; border-radius: 6px; }
-
-  .hint { font-size: 12px; color: var(--muted); text-align: center; margin: 20px 0; line-height: 1.7; }
-  .empty { text-align: center; color: var(--muted); padding: 40px 20px; font-size: 14px; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#2e9e5b" />
+  <title>健康外卖推荐 · 定位附近真实店铺</title>
+  <link rel="stylesheet" href="./css/style.css" />
 </head>
 <body>
-<header>
-  <h1>🥗 健康外卖推荐</h1>
-  <p>定位附近 · 按营养成分推荐 · 远离纯碳水</p>
-</header>
+  <header>
+    <h1>健康外卖推荐</h1>
+    <p>定位附近真实店铺 · 按距离与营养智能筛选 · 远离纯碳水</p>
+  </header>
 
-<div class="container">
-  <div class="card">
-    <div class="loc-row">
-      <button class="primary" id="locateBtn">📍 获取我的位置</button>
-      <div class="loc-status" id="locStatus">点击按钮开始定位（需允许浏览器获取位置）</div>
+  <div class="container">
+    <!-- 未配置 Key 时的提示 -->
+    <div class="card setup" id="setupCard" style="display:none">
+      <h3>首次使用：填入高德地图 Key（约5分钟）</h3>
+      <ol>
+        <li>打开 <a href="https://lbs.amap.com/" target="_blank" rel="noopener">高德开放平台 lbs.amap.com</a>，注册并登录。</li>
+        <li>「应用管理 → 我的应用 → 创建新应用 → 添加 Key」，服务平台选 <code>Web端(JS API)</code>。</li>
+        <li>把 <code>Key</code> 和 <code>安全密钥</code> 填进 <code>js/config.js</code>，保存即可。</li>
+      </ol>
     </div>
-    <div class="goals">
-      <button class="goal-btn active" data-goal="balance">⚖️ 均衡饮食</button>
-      <button class="goal-btn" data-goal="fatloss">🔥 减脂控碳</button>
-      <button class="goal-btn" data-goal="muscle">💪 增肌高蛋白</button>
-    </div>
-  </div>
 
-  <div id="results"></div>
+    <div class="card" id="mainCard">
+      <div class="loc-row">
+        <button class="primary" id="locateBtn">定位并查找附近</button>
+        <div class="loc-status" id="locStatus">点击按钮：定位你的位置并搜索周边真实餐饮店</div>
+      </div>
 
-  <div class="hint">
-    营养数据为常见菜品的估算值，价格为参考区间，实际以平台为准。<br>
-    点击「美团 / 饿了么」按钮会带上菜名和你的城市去对应平台搜索。
-  </div>
-</div>
+      <!-- 历史记录 -->
+      <div class="history-bar" id="historyBar"></div>
 
-<script>
-/* ============ 健康菜品数据库 ============
-   每道菜：名称、分类、热量(kcal)、蛋白(g)、碳水(g)、脂肪(g)、价格区间、标签、关键词
-   重点：高蛋白 / 低精制碳水 / 高纤维，专治"只点碳水"
-*/
-const DISHES = [
-  { name: "鸡胸肉时蔬沙拉", cat: "轻食沙拉", kcal: 320, protein: 35, carb: 18, fat: 11, price: [22, 32], tags: ["高蛋白","高纤维","低碳水"], kw: "鸡胸肉沙拉" },
-  { name: "金枪鱼藜麦碗", cat: "轻食沙拉", kcal: 410, protein: 30, carb: 38, fat: 14, price: [28, 38], tags: ["优质碳水","高蛋白","欧米伽3"], kw: "藜麦沙拉" },
-  { name: "牛肉糙米饭便当", cat: "健康正餐", kcal: 520, protein: 34, carb: 55, fat: 16, price: [25, 35], tags: ["粗粮","高蛋白","铁含量高"], kw: "牛肉糙米饭" },
-  { name: "番茄龙利鱼套餐", cat: "健康正餐", kcal: 380, protein: 33, carb: 28, fat: 12, price: [26, 36], tags: ["低脂","高蛋白","易消化"], kw: "番茄龙利鱼" },
-  { name: "杂粮虾仁炒蛋", cat: "健康正餐", kcal: 360, protein: 28, carb: 30, fat: 13, price: [24, 34], tags: ["高蛋白","粗粮","低油"], kw: "虾仁炒蛋杂粮饭" },
-  { name: "白灼鸡腿菌菇汤", cat: "汤品", kcal: 240, protein: 26, carb: 10, fat: 9, price: [20, 30], tags: ["低碳水","暖胃","高蛋白"], kw: "鸡肉菌菇汤" },
-  { name: "豆腐蔬菜味噌汤", cat: "汤品", kcal: 180, protein: 14, carb: 16, fat: 7, price: [12, 20], tags: ["植物蛋白","低热量","暖胃"], kw: "味噌豆腐汤" },
-  { name: "全麦鸡肉卷", cat: "轻食简餐", kcal: 390, protein: 27, carb: 40, fat: 12, price: [18, 28], tags: ["全麦","高蛋白","方便"], kw: "全麦鸡肉卷" },
-  { name: "希腊酸奶水果杯", cat: "加餐", kcal: 220, protein: 16, carb: 26, fat: 6, price: [15, 25], tags: ["高蛋白","益生菌","低脂"], kw: "希腊酸奶" },
-  { name: "毛豆鸡蛋玉米碗", cat: "加餐", kcal: 260, protein: 18, carb: 28, fat: 9, price: [14, 22], tags: ["植物蛋白","饱腹","高纤维"], kw: "毛豆玉米鸡蛋" },
-  { name: "香煎三文鱼套餐", cat: "健康正餐", kcal: 460, protein: 32, carb: 26, fat: 24, price: [38, 55], tags: ["欧米伽3","高蛋白","好脂肪"], kw: "三文鱼套餐" },
-  { name: "麻酱菠菜豆皮拌菜", cat: "轻食沙拉", kcal: 280, protein: 19, carb: 16, fat: 16, price: [16, 26], tags: ["植物蛋白","高纤维","补铁"], kw: "豆皮拌菜" },
-  { name: "清蒸鸡胸糙米饭", cat: "健康正餐", kcal: 430, protein: 38, carb: 45, fat: 8, price: [22, 32], tags: ["高蛋白","低脂","粗粮"], kw: "清蒸鸡胸糙米" },
-  { name: "蔬菜豆腐沙拉", cat: "轻食沙拉", kcal: 230, protein: 15, carb: 18, fat: 11, price: [16, 24], tags: ["素食","高纤维","低热量"], kw: "豆腐蔬菜沙拉" },
-  { name: "黑椒牛柳荞麦面", cat: "健康正餐", kcal: 490, protein: 30, carb: 52, fat: 17, price: [26, 36], tags: ["荞麦","高蛋白","低GI"], kw: "黑椒牛柳荞麦面" },
-];
+      <!-- 视图切换 -->
+      <div class="view-tabs">
+        <button class="view-btn active" data-view="health">健康优选</button>
+        <button class="view-btn" data-view="food">周边美食</button>
+        <button class="view-btn" data-view="fav">我的收藏</button>
+      </div>
 
-/* 高碳水"陷阱"提示项——用于教育，不推荐但展示对比 */
-const CARB_TRAP_KEYWORDS = ["炸鸡","汉堡","奶茶","薯条","盖浇饭","炒饭","拌面","披萨","蛋糕"];
-
-let userCity = "";        // 反查到的城市，用于搜索关键词
-let userCoords = null;    // {lat, lng}
-let currentGoal = "balance";
-
-/* ---- 评分函数：根据目标给每道菜打分 ---- */
-function scoreDish(d, goal) {
-  const pRatio = d.protein / d.kcal * 100;     // 每百卡蛋白
-  const cRatio = d.carb / (d.protein + d.carb + d.fat); // 碳水占比
-  let s = 0;
-  if (goal === "fatloss") {
-    s = pRatio * 2.2 - d.kcal * 0.04 - cRatio * 20;
-  } else if (goal === "muscle") {
-    s = d.protein * 1.6 - Math.abs(550 - d.kcal) * 0.02;
-  } else { // balance
-    s = pRatio * 1.5 - Math.abs(cRatio - 0.45) * 30 - Math.abs(450 - d.kcal) * 0.02;
-  }
-  return s;
-}
-
-function scoreColor(s) {
-  if (s >= 55) return "#2e9e5b";
-  if (s >= 40) return "#7cb342";
-  if (s >= 25) return "#d9b441";
-  return "#e8743b";
-}
-
-/* ---- 构造美团/饿了么搜索链接 ---- */
-function buildLinks(kw) {
-  const cityKw = userCity ? userCity + " " : "";
-  const q = encodeURIComponent(cityKw + kw);
-  // 美团搜索（网页端会引导打开App或H5）
-  const mt = `https://i.meituan.com/search/result?q=${encodeURIComponent(kw)}`;
-  // 饿了么没有稳定的网页搜索入口，跳到主站并附关键词
-  const elm = `https://www.ele.me/?keyword=${encodeURIComponent(kw)}`;
-  return { mt, elm };
-}
-
-function render() {
-  const wrap = document.getElementById("results");
-  if (!userCoords) {
-    wrap.innerHTML = `<div class="empty">请先点击上方「获取我的位置」开始推荐 🍽️</div>`;
-    return;
-  }
-  const scored = DISHES
-    .map(d => ({ ...d, score: scoreDish(d, currentGoal) }))
-    .sort((a, b) => b.score - a.score);
-
-  // 归一化分数到 0-99 展示
-  const max = Math.max(...scored.map(s => s.score));
-  const min = Math.min(...scored.map(s => s.score));
-
-  let html = `<div class="section-title">为你推荐（${goalLabel(currentGoal)}）<span class="count">共 ${scored.length} 道</span></div>`;
-
-  scored.forEach(d => {
-    const disp = Math.round(20 + (d.score - min) / (max - min + 0.0001) * 79);
-    const links = buildLinks(d.kw);
-    const total = d.protein + d.carb + d.fat;
-    const pW = (d.protein / total * 100).toFixed(0);
-    const cW = (d.carb / total * 100).toFixed(0);
-    const fW = (d.fat / total * 100).toFixed(0);
-    const highCarb = d.carb > d.protein * 1.6;
-    const reason = makeReason(d, currentGoal, highCarb);
-
-    html += `
-    <div class="dish">
-      <div class="dish-head">
-        <div>
-          <div class="dish-name">${d.name}
-            <span class="score-badge" style="background:${scoreColor(disp)}">健康分 ${disp}</span>
-          </div>
-          <div class="dish-cat">${d.cat} · ${d.kcal} kcal</div>
+      <!-- 健康模式面板 -->
+      <div class="panel" id="panelHealth">
+        <div class="goals">
+          <button class="goal-btn active" data-goal="balance">均衡</button>
+          <button class="goal-btn" data-goal="fatloss">减脂控碳</button>
+          <button class="goal-btn" data-goal="muscle">增肌高蛋白</button>
         </div>
-        <div class="dish-price">¥${d.price[0]}-${d.price[1]}<br><small>预估</small></div>
       </div>
 
-      <div class="macros">
-        <div class="macro protein"><div class="v">${d.protein}g</div><div class="l">蛋白质</div></div>
-        <div class="macro carb"><div class="v">${d.carb}g</div><div class="l">碳水</div></div>
-        <div class="macro fat"><div class="v">${d.fat}g</div><div class="l">脂肪</div></div>
+      <!-- 美食模式面板 -->
+      <div class="panel" id="panelFood" style="display:none">
+        <div class="filter-row">
+          <span class="flabel">想吃</span>
+          <input id="kwInput" type="text" placeholder="火锅 / 日料 / 面… 可不填" />
+        </div>
+        <div class="chips" id="kwChips"><!-- JS 渲染 --></div>
+        <div class="filter-grid">
+          <div>
+            <label>口味</label>
+            <select id="spicySel">
+              <option value="any">不限</option>
+              <option value="no">不吃辣</option>
+              <option value="mild">微辣</option>
+              <option value="hot">爱吃辣</option>
+            </select>
+          </div>
+          <div>
+            <label>人数</label>
+            <select id="peopleSel">
+              <option value="1">1 人</option>
+              <option value="2" selected>2 人</option>
+              <option value="4">3-4 人</option>
+              <option value="8">5 人以上</option>
+            </select>
+          </div>
+          <div>
+            <label>时间</label>
+            <select id="mealSel">
+              <option value="auto">按当前时间</option>
+              <option value="breakfast">早餐</option>
+              <option value="lunch">午餐</option>
+              <option value="dinner">晚餐</option>
+              <option value="night">夜宵</option>
+            </select>
+          </div>
+        </div>
+        <button class="food-search" id="foodSearchBtn">按条件找附近</button>
       </div>
-      <div class="bar">
-        <div class="p" style="width:${pW}%"></div>
-        <div class="c" style="width:${cW}%"></div>
-        <div class="f" style="width:${fW}%"></div>
+
+      <!-- 半径 -->
+      <div class="radius-row">
+        范围
+        <select id="radiusSel">
+          <option value="1000">1 km</option>
+          <option value="2000">2 km</option>
+          <option value="3000" selected>3 km</option>
+          <option value="5000">5 km</option>
+        </select>
       </div>
+    </div>
 
-      <div class="reason ${highCarb ? 'warn' : ''}">${reason}</div>
+    <div id="results"></div>
 
-      <div class="tags">${d.tags.map(t => `<span class="tag">${t}</span>`).join("")}</div>
+    <div class="hint">
+      店铺、距离来自高德地图真实数据；健康度由店铺类型/名称智能判断，价格为参考区间。<br>
+      美团/饿了么无公开"直达店铺"链接，故「美团外卖」按钮会复制店名并打开外卖网页，粘贴搜索即可。
+    </div>
+  </div>
 
-      <div class="links" style="margin-top:12px">
-        <a class="link-btn link-mt" href="${links.mt}" target="_blank" rel="noopener">美团搜「${d.kw}」</a>
-        <a class="link-btn link-elm" href="${links.elm}" target="_blank" rel="noopener">饿了么搜「${d.kw}」</a>
-      </div>
-    </div>`;
-  });
+  <div id="toast"></div>
 
-  wrap.innerHTML = html;
-}
-
-function goalLabel(g) {
-  return { balance: "均衡饮食", fatloss: "减脂控碳", muscle: "增肌高蛋白" }[g];
-}
-
-function makeReason(d, goal, highCarb) {
-  if (highCarb) {
-    return `⚠️ 碳水偏高（${d.carb}g），建议搭配多吃菜、少喝含糖饮料。如果今天主食吃得多，可以换成更高蛋白的选项。`;
-  }
-  const r = [];
-  if (d.protein >= 28) r.push(`蛋白质 ${d.protein}g，扛饿不囤脂`);
-  if (d.carb <= 30) r.push(`碳水适中，不会血糖飙升`);
-  if (d.tags.includes("粗粮") || d.tags.includes("全麦") || d.tags.includes("优质碳水"))
-    r.push(`用粗粮代替精米白面，更耐饿`);
-  if (goal === "fatloss") r.push(`热量 ${d.kcal} kcal，减脂期友好`);
-  if (goal === "muscle") r.push(`蛋白足，适合训练后补充`);
-  return "✅ " + (r.slice(0, 2).join("；") || "营养均衡，适合日常") + "。";
-}
-
-/* ---- 定位 ---- */
-const locBtn = document.getElementById("locateBtn");
-const locStatus = document.getElementById("locStatus");
-
-locBtn.addEventListener("click", () => {
-  if (!navigator.geolocation) {
-    locStatus.textContent = "你的浏览器不支持定位，可手动在平台搜索。";
-    locStatus.className = "loc-status err";
-    render();
-    return;
-  }
-  locStatus.textContent = "定位中…请在弹窗中点击「允许」";
-  locStatus.className = "loc-status";
-  locBtn.disabled = true;
-
-  navigator.geolocation.getCurrentPosition(async (pos) => {
-    userCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-    locStatus.textContent = `已定位：${userCoords.lat.toFixed(4)}, ${userCoords.lng.toFixed(4)} · 正在识别城市…`;
-    locStatus.className = "loc-status ok";
-    locBtn.disabled = false;
-    await reverseGeocode();
-    render();
-  }, (err) => {
-    locBtn.disabled = false;
-    let msg = "定位失败。";
-    if (err.code === 1) msg = "你拒绝了定位权限。可在地址栏左侧重新允许，或直接看下方推荐去平台搜索。";
-    else if (err.code === 2) msg = "无法获取位置（信号/网络问题）。仍可查看推荐。";
-    else if (err.code === 3) msg = "定位超时。仍可查看推荐。";
-    locStatus.textContent = msg;
-    locStatus.className = "loc-status err";
-    // 即使定位失败也展示推荐
-    userCoords = userCoords || { lat: 0, lng: 0 };
-    render();
-  }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
-});
-
-/* 用 OpenStreetMap 免费接口反查城市（带容错，失败不影响主流程） */
-async function reverseGeocode() {
-  try {
-    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${userCoords.lat}&lon=${userCoords.lng}&accept-language=zh-CN`;
-    const res = await fetch(url, { headers: { "Accept": "application/json" } });
-    if (!res.ok) throw new Error("geocode fail");
-    const data = await res.json();
-    const a = data.address || {};
-    userCity = a.city || a.town || a.county || a.state || "";
-    const area = [a.city || a.town, a.suburb || a.district || a.county].filter(Boolean).join(" · ");
-    if (area) {
-      locStatus.textContent = `📍 ${area}（${userCoords.lat.toFixed(4)}, ${userCoords.lng.toFixed(4)}）`;
-    }
-  } catch (e) {
-    // 反查失败就保留坐标显示，不影响推荐和跳转
-    userCity = "";
-  }
-}
-
-/* ---- 目标切换 ---- */
-document.querySelectorAll(".goal-btn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll(".goal-btn").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    currentGoal = btn.dataset.goal;
-    render();
-  });
-});
-
-render();
-</script>
+  <!-- 配置 -->
+  <script src="./js/config.js"></script>
+  <!-- 数据层 -->
+  <script src="./js/data/health-rules.js"></script>
+  <script src="./js/data/food-rules.js"></script>
+  <!-- 引擎层 -->
+  <script src="./js/engine/scorer.js"></script>
+  <script src="./js/engine/storage.js"></script>
+  <script src="./js/engine/amap-service.js"></script>
+  <!-- UI 层 -->
+  <script src="./js/ui/render.js"></script>
+  <script src="./js/ui/app.js"></script>
 </body>
 </html>

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>单元测试 · 健康外卖推荐</title>
+  <style>
+    body { font-family: -apple-system, "Microsoft YaHei", sans-serif; max-width: 760px; margin: 24px auto; padding: 0 16px; color: #2b3a33; }
+    h1 { color: #1f7a44; }
+    .case { border-left: 4px solid #ccc; padding: 8px 14px; margin: 8px 0; border-radius: 6px; background: #fafafa; }
+    .pass { border-color: #2e9e5b; }
+    .fail { border-color: #e8743b; background: #fdf0e9; }
+    .tag { font-weight: 700; margin-right: 8px; }
+    .pass .tag { color: #2e9e5b; }
+    .fail .tag { color: #e8743b; }
+    #summary { font-size: 1.1em; font-weight: 700; padding: 12px; border-radius: 8px; }
+    .detail { font-size: .85em; color: #555; margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <h1>评分与存储 单元测试</h1>
+  <div id="summary"></div>
+  <div id="results"></div>
+
+  <script src="../js/config.js"></script>
+  <script src="../js/data/health-rules.js"></script>
+  <script src="../js/data/food-rules.js"></script>
+  <script src="../js/engine/scorer.js"></script>
+  <script src="../js/engine/storage.js"></script>
+
+  <script>
+    const results = [];
+    const assert = (name, cond, detail) => results.push({ name, ok: !!cond, detail: detail || "" });
+
+    // ---- 健康度 ----
+    (function () {
+      const salad = Scorer.healthScore({ name: "超级元气沙拉轻食", type: "餐饮服务;快餐" });
+      assert("沙拉/轻食店健康分为正且较高", salad.s >= 30, "s=" + salad.s);
+      const fried = Scorer.healthScore({ name: "炸鸡汉堡披萨店", type: "餐饮服务" });
+      assert("炸鸡汉堡店健康分为负", fried.s < 0, "s=" + fried.s);
+    })();
+
+    // ---- 价格 ----
+    (function () {
+      assert("火锅价格区间为 [60,120]", JSON.stringify(Scorer.estPrice({ name: "老灶火锅", type: "" })) === "[60,120]", JSON.stringify(Scorer.estPrice({ name: "老灶火锅", type: "" })));
+      assert("无匹配走默认 [20,45]", JSON.stringify(Scorer.estPrice({ name: "某某餐厅", type: "" })) === "[20,45]");
+    })();
+
+    // ---- 辣味 ----
+    (function () {
+      assert("川菜判定为辣", Scorer.isSpicy({ name: "正宗川菜馆", type: "" }) === true);
+      assert("白粥店判定为不辣", Scorer.isSpicy({ name: "广式白粥铺", type: "" }) === false);
+    })();
+
+    // ---- 餐次 ----
+    (function () {
+      assert("早上8点判定为早餐", Scorer.autoMeal(new Date(2026, 0, 1, 8, 0)) === "breakfast");
+      assert("晚上23点判定为夜宵", Scorer.autoMeal(new Date(2026, 0, 1, 23, 0)) === "night");
+    })();
+
+    // ---- 美食排序：关键词与不吃辣 ----
+    (function () {
+      const poiSpicy = { name: "麻辣香锅", type: "", distance: 500 };
+      const poiMild = { name: "日式定食", type: "", distance: 500 };
+      const noSpicy = { keyword: "", spicy: "no", people: 2, meal: "auto" };
+      assert("不吃辣时清淡店得分高于辣店",
+        Scorer.rankFood(poiMild, noSpicy) > Scorer.rankFood(poiSpicy, noSpicy));
+      const kwBoost = Scorer.rankFood({ name: "海鲜大排档", type: "", distance: 500 }, { keyword: "海鲜", spicy: "any", people: 2, meal: "auto" });
+      const noKw = Scorer.rankFood({ name: "海鲜大排档", type: "", distance: 500 }, { keyword: "", spicy: "any", people: 2, meal: "auto" });
+      assert("命中关键词得分更高", kwBoost > noKw, `kw=${kwBoost} noKw=${noKw}`);
+    })();
+
+    // ---- 工具函数 ----
+    (function () {
+      assert("距离文本：500m", Scorer.distText(500) === "500 m");
+      assert("距离文本：1500→1.5km", Scorer.distText(1500) === "1.5 km");
+      assert("高健康分配绿色", Scorer.scoreColor(50) === "#2e9e5b");
+    })();
+
+    // ---- 收藏夹 ----
+    (function () {
+      const before = Store.getFavorites().length;
+      const poi = { id: "__test_poi__", name: "测试店", type: "", address: "", location: [0, 0] };
+      const added = Store.toggleFavorite(poi);
+      assert("收藏后 isFavorite 为真", added === true && Store.isFavorite("__test_poi__"));
+      const removed = Store.toggleFavorite(poi);
+      assert("再次切换取消收藏", removed === false && !Store.isFavorite("__test_poi__"));
+      assert("收藏数量复原", Store.getFavorites().length === before);
+    })();
+
+    // ---- 历史去重与上限 ----
+    (function () {
+      Store.clearHistory();
+      for (let i = 0; i < CONFIG.HISTORY_LIMIT + 3; i++) {
+        Store.addHistory({ label: "地点" + i, center: [i, i] });
+      }
+      assert("历史不超过上限", Store.getHistory().length === CONFIG.HISTORY_LIMIT, "len=" + Store.getHistory().length);
+      Store.addHistory({ label: "地点0", center: [0, 0] });
+      const labels = Store.getHistory().map((h) => h.label);
+      const dup = labels.filter((l) => l === "地点0").length;
+      assert("重复地点去重且置顶", dup === 1 && labels[0] === "地点0", labels.join(","));
+      Store.clearHistory();
+    })();
+
+    // ---- 渲染 ----
+    const passed = results.filter((r) => r.ok).length;
+    const total = results.length;
+    const sum = document.getElementById("summary");
+    sum.textContent = `通过 ${passed} / ${total}`;
+    sum.style.background = passed === total ? "#e6f7ee" : "#fdf0e9";
+    sum.style.color = passed === total ? "#1f7a44" : "#e8743b";
+    document.getElementById("results").innerHTML = results.map((r) =>
+      `<div class="case ${r.ok ? "pass" : "fail"}"><span class="tag">${r.ok ? "PASS" : "FAIL"}</span>${r.name}${r.detail ? `<div class="detail">${r.detail}</div>` : ""}</div>`
+    ).join("");
+  </script>
+</body>
+</html>
