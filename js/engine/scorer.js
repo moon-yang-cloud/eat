@@ -8,6 +8,15 @@
  */
 
 const Scorer = {
+  /** 读取评分权重（带默认值，避免 CONFIG 缺失时报错） */
+  _w() {
+    return (typeof CONFIG !== "undefined" && CONFIG.SCORING) || {
+      HEALTH_DIST_PENALTY: 8, FATLOSS_FACTOR: 0.5, MUSCLE_PROTEIN_BONUS: 18,
+      FOOD_BASE: 50, FOOD_DIST_PENALTY: 12, FOOD_KEYWORD_BONUS: 25,
+      FOOD_MEAL_BONUS: 16, SPICY_NO_PENALTY: 40, SPICY_HOT_BONUS: 22,
+    };
+  },
+
   /**
    * 计算店铺健康度
    * @returns {{s:number, hit:string[], bad:string[]}} 分值与命中的关键词
@@ -53,13 +62,14 @@ const Scorer = {
    * 健康模式综合排序分：健康度 - 距离惩罚，按目标微调
    */
   rankHealth(poi, goal) {
+    const w = this._w();
     const h = poi._health ? poi._health.s : this.healthScore(poi).s;
     const distKm = (poi.distance || 0) / 1000;
-    let s = h - distKm * 8; // 每公里扣 8 分
-    if (goal === "fatloss") s += h * 0.5; // 减脂更看重低碳水
+    let s = h - distKm * w.HEALTH_DIST_PENALTY; // 距离惩罚
+    if (goal === "fatloss") s += h * w.FATLOSS_FACTOR; // 减脂更看重低碳水
     if (goal === "muscle") {
       const n = (poi.name || "") + (poi.type || "");
-      if (MUSCLE_PROTEIN_RE.test(n)) s += 18;
+      if (MUSCLE_PROTEIN_RE.test(n)) s += w.MUSCLE_PROTEIN_BONUS;
     }
     return s;
   },
@@ -69,19 +79,20 @@ const Scorer = {
    * @param {object} filters {keyword, spicy, people, meal}
    */
   rankFood(poi, filters) {
+    const w = this._w();
     const n = (poi.name || "") + (poi.type || "");
     const distKm = (poi.distance || 0) / 1000;
-    let s = 50 - distKm * 12; // 美食模式更看重距离
+    let s = w.FOOD_BASE - distKm * w.FOOD_DIST_PENALTY; // 美食模式更看重距离
 
-    if (filters.keyword && n.includes(filters.keyword)) s += 25;
+    if (filters.keyword && n.includes(filters.keyword)) s += w.FOOD_KEYWORD_BONUS;
 
     const spicy = this.isSpicy(poi);
-    if (filters.spicy === "no") s += spicy ? -40 : 8;
+    if (filters.spicy === "no") s += spicy ? -w.SPICY_NO_PENALTY : 8;
     if (filters.spicy === "mild") s += spicy ? -6 : 4;
-    if (filters.spicy === "hot") s += spicy ? 22 : -4;
+    if (filters.spicy === "hot") s += spicy ? w.SPICY_HOT_BONUS : -4;
 
     const meal = filters.meal === "auto" ? this.autoMeal() : filters.meal;
-    if (MEAL_RE[meal] && MEAL_RE[meal].test(n)) s += 16;
+    if (MEAL_RE[meal] && MEAL_RE[meal].test(n)) s += w.FOOD_MEAL_BONUS;
     if (meal === "breakfast" && /火锅|烧烤|烤肉/.test(n)) s -= 20;
     if (meal === "night" && /早餐|包子|豆浆/.test(n)) s -= 15;
 

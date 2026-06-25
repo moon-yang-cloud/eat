@@ -27,6 +27,8 @@
       setupCard: $("setupCard"),
       locateBtn: $("locateBtn"),
       locStatus: $("locStatus"),
+      placeInput: $("placeInput"),
+      placeBtn: $("placeBtn"),
       panelHealth: $("panelHealth"),
       panelFood: $("panelFood"),
       radiusSel: $("radiusSel"),
@@ -40,17 +42,25 @@
       if (els.setupCard) els.setupCard.style.display = "block";
       setStatus("请先在 js/config.js 填入高德 Key 和安全密钥", "err");
       if (els.locateBtn) els.locateBtn.disabled = true;
+      if (els.placeBtn) els.placeBtn.disabled = true;
     }
 
     bindEvents();
     renderFoodChips();
     renderHistory();
     renderCurrent();
+    registerSW();
   }
 
   // ---------------- 事件绑定 ----------------
   function bindEvents() {
     els.locateBtn.addEventListener("click", locateAndSearch);
+
+    // 地名搜索
+    els.placeBtn.addEventListener("click", searchByPlace);
+    els.placeInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") searchByPlace();
+    });
 
     // 视图切换（健康/美食/收藏）
     document.querySelectorAll(".view-btn").forEach((btn) => {
@@ -131,6 +141,30 @@
       setStatus(e.message || "定位失败，请重试。", "err");
     } finally {
       els.locateBtn.disabled = false;
+    }
+  }
+
+  // 按地名搜索：地理编码 → 定位 → 检索
+  async function searchByPlace() {
+    const place = els.placeInput.value.trim();
+    if (!place) { setStatus("请输入一个地点名", "err"); return; }
+    els.placeBtn.disabled = true;
+    setStatus("正在解析地点…", "");
+    try {
+      await AmapService.load();
+      const loc = await AmapService.geocode(place);
+      state.userCenter = loc.center;
+      state.address = loc.address;
+      setStatus(loc.address, "ok");
+      Store.addHistory({ label: place, center: loc.center });
+      renderHistory();
+      // 地名搜索默认切到搜索视图（保留当前 health/food）
+      if (state.view === "fav") switchView("health");
+      else await doSearch();
+    } catch (e) {
+      setStatus(e.message || "地点解析失败", "err");
+    } finally {
+      els.placeBtn.disabled = false;
     }
   }
 
@@ -261,6 +295,17 @@
     t.classList.add("show");
     clearTimeout(showToast._t);
     showToast._t = setTimeout(() => t.classList.remove("show"), 2600);
+  }
+
+  // 注册 Service Worker（PWA 离线壳）
+  function registerSW() {
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js").catch(() => {
+          /* 离线能力不可用时静默降级 */
+        });
+      });
+    }
   }
 
   if (document.readyState === "loading") {

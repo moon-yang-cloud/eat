@@ -1,0 +1,17 @@
+{
+  "name": "健康外卖推荐",
+  "short_name": "健康外卖",
+  "description": "定位附近真实餐饮店，按营养健康度或口味偏好智能推荐",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f4f7f5",
+  "theme_color": "#2e9e5b",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

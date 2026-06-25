@@ -40,6 +40,21 @@ button.primary:disabled { background: #b9c9c0; cursor: not-allowed; }
 .loc-status.ok { color: var(--green-dark); font-weight: 600; }
 .loc-status.err { color: var(--warn); }
 
+/* 地名搜索行 */
+.place-row { display: flex; gap: 8px; margin-top: 12px; }
+.place-row input {
+  flex: 1; font-size: 14px; padding: 10px 12px;
+  border: 1.5px solid #d7e3dc; border-radius: 10px; outline: none; min-width: 0;
+}
+.place-row input:focus { border-color: var(--green); }
+.place-row button {
+  background: #eef5f0; color: var(--green-dark); border: 1.5px solid #d7e3dc;
+  border-radius: 10px; padding: 10px 16px; font-size: 14px; font-weight: 600;
+  cursor: pointer; white-space: nowrap; transition: all .15s;
+}
+.place-row button:hover { background: #e1ebe8; }
+.place-row button:disabled { color: var(--muted); cursor: not-allowed; }
+
 /* 历史记录 */
 .history-bar { margin-top: 12px; }
 .history { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 12px; }

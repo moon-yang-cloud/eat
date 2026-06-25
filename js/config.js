@@ -20,6 +20,19 @@ const CONFIG = {
   FAV_KEY: "healthyEat.favorites.v1", // 收藏夹 localStorage 键
   HISTORY_KEY: "healthyEat.history.v1", // 搜索历史 localStorage 键
   HISTORY_LIMIT: 8, // 历史记录保留条数
+
+  // 评分与排序权重（可按需调优）
+  SCORING: {
+    HEALTH_DIST_PENALTY: 8, // 健康模式：每公里扣分
+    FATLOSS_FACTOR: 0.5, // 减脂目标：健康分额外加权系数
+    MUSCLE_PROTEIN_BONUS: 18, // 增肌目标：命中高蛋白关键词加分
+    FOOD_BASE: 50, // 美食模式：基础分
+    FOOD_DIST_PENALTY: 12, // 美食模式：每公里扣分
+    FOOD_KEYWORD_BONUS: 25, // 美食模式：命中关键词加分
+    FOOD_MEAL_BONUS: 16, // 命中餐次关键词加分
+    SPICY_NO_PENALTY: 40, // 不吃辣却是辣店：扣分
+    SPICY_HOT_BONUS: 22, // 爱吃辣且是辣店：加分
+  },
 };
 
 if (typeof window !== "undefined") window.CONFIG = CONFIG;

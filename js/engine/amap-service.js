@@ -19,7 +19,7 @@ const AmapService = {
       }
       window._AMapSecurityConfig = { securityJsCode: CONFIG.AMAP_SECURITY_CODE };
       const s = document.createElement("script");
-      s.src = `https://webapi.amap.com/maps?v=2.0&key=${CONFIG.AMAP_KEY}&plugin=AMap.Geolocation,AMap.PlaceSearch,AMap.CitySearch`;
+      s.src = `https://webapi.amap.com/maps?v=2.0&key=${CONFIG.AMAP_KEY}&plugin=AMap.Geolocation,AMap.PlaceSearch,AMap.CitySearch,AMap.Geocoder`;
       s.onload = () => { this._loaded = true; resolve(); };
       s.onerror = () => reject(new Error("高德脚本加载失败，请检查 Key 是否正确、网络是否正常"));
       document.head.appendChild(s);
@@ -70,6 +70,30 @@ const AmapService = {
             });
           } else {
             reject(new Error("定位失败，请检查定位权限或网络后重试。"));
+          }
+        });
+      });
+    });
+  },
+
+  /**
+   * 地名 → 坐标（地理编码），用于"搜索某个地点附近"
+   * @param {string} address 地名，如 "中关村" "哈工大"
+   * @returns {Promise<{center:number[], address:string}>}
+   */
+  geocode(address) {
+    return new Promise((resolve, reject) => {
+      AMap.plugin("AMap.Geocoder", () => {
+        const geocoder = new AMap.Geocoder({});
+        geocoder.getLocation(address, (status, result) => {
+          if (status === "complete" && result.geocodes && result.geocodes.length) {
+            const g = result.geocodes[0];
+            resolve({
+              center: [g.location.lng, g.location.lat],
+              address: g.formattedAddress || address,
+            });
+          } else {
+            reject(new Error("找不到这个地点，换个更具体的说法试试（可带上城市名）"));
           }
         });
       });
