@@ -127,8 +127,12 @@ const AmapService = {
               distance: p.distance != null ? p.distance : p.distanceToCenter || null,
             }));
             resolve(pois);
+          } else if (status === "no_data") {
+            resolve([]); // 确实附近没有
           } else {
-            resolve([]); // 无结果不视为错误
+            // status === "error"：把高德的真实错误抛出来，便于定位（配额/密钥/域名白名单等）
+            const msg = typeof result === "string" ? result : (result && result.info) || "未知错误";
+            reject(new Error("高德检索失败：" + msg));
           }
         });
       });
